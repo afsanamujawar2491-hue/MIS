@@ -1,0 +1,41 @@
+package com.MIS.controller;
+
+@RestController
+@RequestMapping("/api/users")
+@CrossOrigin("*")
+public class UserController {
+
+    @Autowired
+    private UserRepository repo;
+
+    @GetMapping
+    public List<User> getAllUsers(){
+        return repo.findAll();
+    }
+
+    @DeleteMapping("/{id}")
+    public String deleteUser(@PathVariable Integer id){
+
+        repo.deleteById(id);
+
+        return "User Deleted Successfully";
+    }
+
+    @PutMapping("/status/{id}")
+    public String updateStatus(
+            @PathVariable Integer id){
+
+        User user = repo.findById(id)
+                .orElseThrow();
+
+        if(user.getStatus().equals("active")){
+            user.setStatus("inactive");
+        }else{
+            user.setStatus("active");
+        }
+
+        repo.save(user);
+
+        return "Status Updated";
+    }
+}

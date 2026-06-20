@@ -1,0 +1,236 @@
+package com.MIS.service;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.MIS.dto.AddUserRequest;
+import com.MIS.dto.ForgotPasswordRequest;
+import com.MIS.dto.ForgotPasswordResponse;
+import com.MIS.dto.LoginRequest;
+import com.MIS.dto.LoginResponse;
+import com.MIS.dto.RegisterRequest;
+import com.MIS.dto.ResetPasswordRequest;
+import com.MIS.entity.User;
+import com.MIS.repository.UserRepository;
+import com.MIS.security.JwtService;
+
+@Service
+public class AuthService {
+
+    @Autowired
+    UserRepository repo;
+
+    @Autowired
+    PasswordEncoder encoder;
+    
+    @Autowired
+    private JwtService jwtService;
+    
+    @Autowired
+    private EmailService emailService;
+
+    //Register
+    public String register(RegisterRequest request){
+
+    	if(repo.findByEmail(request.getEmail()).isPresent()){
+    	    return "Email already exists";
+    	}
+
+        User user=new User();
+
+        user.setFullName(request.getFullName());
+
+        user.setEmail(request.getEmail());
+
+        user.setPassword(
+                encoder.encode(request.getPassword()));
+
+        user.setRole(request.getRole());
+
+        user.setStatus("active");
+        
+        user.setEmailVerified(false);
+        
+        String token =
+                UUID.randomUUID().toString();
+
+        user.setVerificationToken(token);
+
+        repo.save(user);
+        
+        System.out.println("Sending verification email to: " + user.getEmail());
+
+        String verifyLink =
+        	    "http://localhost:5173/email-verified?token="
+        	    + token;
+
+        String body =
+                "Hello " + user.getFullName() + ",\n\n" +
+                "Thank you for registering with MIS Portal.\n\n" +
+                "Please verify your email address by clicking the link below:\n\n" +
+                verifyLink +
+                "\n\nThis link can only be used once.\n\n" +
+                "Regards,\nMIS Team";
+        
+        System.out.println("Generated token: " + token);
+        System.out.println("Saved token in user: " + user.getVerificationToken());
+
+        emailService.sendEmail(
+                user.getEmail(),
+                "MIS Portal - Email Verification",
+                body
+        );
+        	
+        	return "Verification Email Sent";
+
+    }
+
+    //Login
+public ResponseEntity<LoginResponse> login(LoginRequest request) {
+
+    Optional<User> optionalUser = repo.findByEmail(request.getEmail());
+
+    LoginResponse response = new LoginResponse();
+
+    if (optionalUser.isEmpty()) {
+        response.setMessage("User not found");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    User user = optionalUser.get();
+
+    if (!encoder.matches(request.getPassword(), user.getPassword())) {
+        response.setMessage("Invalid Password");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
+    response.setToken(jwtService.generateToken(user.getEmail()));
+    response.setRole(user.getRole());
+    response.setMessage("Login Successful");
+
+    return ResponseEntity.ok(response);
+}
+   
+   //Forgot password
+ public ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request) {
+
+    ForgotPasswordResponse response = new ForgotPasswordResponse();
+
+    Optional<User> optionalUser = repo.findByEmail(request.getEmail());
+
+    if (optionalUser.isEmpty()) {
+        response.setSuccess(false);
+        response.setMessage("User Not Found");
+        return response;
+    }
+
+    User user = optionalUser.get();
+
+    String token = UUID.randomUUID().toString();
+    
+    user.setResetToken(token);
+    user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(15));
+
+    repo.save(user);
+    System.out.println("Received token: " + token);
+    String resetLink =
+            "http://localhost:5173/reset-password?token=" + token;
+
+    emailService.sendEmail(
+            user.getEmail(),
+            "Reset Password",
+            "Click below to reset password:\n" + resetLink
+    );
+
+    response.setSuccess(true);
+    response.setMessage("Password reset email sent");
+
+    return response;
+}
+   
+   //Reset password
+   public String resetPassword(
+	        ResetPasswordRequest request){
+
+	    User user = repo.findByResetToken(
+	            request.getToken())
+	            .orElseThrow(() ->
+	                    new RuntimeException("Invalid Token"));
+
+	    if(user.getResetTokenExpiry()
+	            .isBefore(LocalDateTime.now())){
+
+	        throw new RuntimeException(
+	                "Token Expired");
+	    }
+
+	    user.setPassword(
+	            encoder.encode(
+	                    request.getNewPassword()));
+
+	    user.setResetToken(null);
+	    user.setResetTokenExpiry(null);
+
+	    repo.save(user);
+
+	    return "Password Updated";
+	}
+   
+   //Verify
+public String verify(String token) {
+
+    Optional<User> optionalUser =
+            repo.findByVerificationToken(token);
+
+    if (optionalUser.isEmpty()) {
+        return "invalid";
+    }
+
+    User user = optionalUser.get();
+
+    if (user.isEmailVerified()) {
+        return "already_verified";
+    }
+
+    // Optional expiry check (if you have it)
+    // if (user.getTokenExpiry().isBefore(LocalDateTime.now())) {
+    //     return "expired";
+    // }
+
+    user.setEmailVerified(true);
+    user.setVerificationToken(null);
+
+    repo.save(user);
+
+    return "success";
+}
+//Add User API
+public String addUser(AddUserRequest request){
+
+	if(repo.findByEmail(request.getEmail()).isPresent()){
+	    return "Email already exists";
+	}
+    User user = new User();
+
+    user.setFullName(request.getFullName());
+    user.setEmail(request.getEmail());
+    user.setPassword(
+        encoder.encode(request.getPassword())
+    );
+
+    user.setRole(request.getRole());
+    user.setStatus("active");
+    user.setEmailVerified(true);
+
+    repo.save(user);
+
+    return "User Added Successfully";
+}
+}

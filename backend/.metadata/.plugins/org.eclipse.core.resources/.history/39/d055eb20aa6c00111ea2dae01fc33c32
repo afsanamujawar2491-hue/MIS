@@ -1,0 +1,106 @@
+package com.MIS.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.MIS.dto.AddUserRequest;
+import com.MIS.dto.ForgotPasswordRequest;
+import com.MIS.dto.LoginRequest;
+import com.MIS.dto.RegisterRequest;
+import com.MIS.dto.ResetPasswordRequest;
+import com.MIS.service.AuthService;
+
+import jakarta.validation.Valid;
+
+@RestController
+
+@RequestMapping("/api/auth")
+
+public class AuthController {
+
+    @Autowired
+
+    AuthService service;
+
+    //Register API
+    @PostMapping("/register")
+
+
+public ResponseEntity<?> register(@Valid
+        @RequestBody RegisterRequest request){
+
+    String result = service.register(request);
+
+    if(result.equals("Email already exists")) {
+        return ResponseEntity.badRequest().body(result);
+    }
+
+    return ResponseEntity.ok(result);
+}
+   //Login API 
+    @PostMapping("/login")
+
+public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+    return service.login(request);
+}
+    
+    //Forgot Password API
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(
+            @RequestBody ForgotPasswordRequest request){
+
+        return ResponseEntity.ok(
+                service.forgotPassword(request));
+    }
+    
+    //Reset Password API
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(
+            @RequestBody ResetPasswordRequest request){
+
+        return ResponseEntity.ok(
+                service.resetPassword(request));
+    }
+    
+    //Verify API
+    @GetMapping("/verify")
+    
+public ResponseEntity<String> verify(
+        @RequestParam String token){
+
+    boolean verified = service.verify(token);
+
+    if(verified){
+    	return ResponseEntity.ok("verified");
+//        return ResponseEntity.status(302)
+//                .header(
+//                    "Location",
+//                    "http://localhost:5173/email-verified")
+//                .build();
+    }
+
+//    return ResponseEntity.status(302)
+//            .header(
+//                "Location",
+//                "http://localhost:5173/verification-expired")
+//            .build();
+    return ResponseEntity.ok("verified");
+}
+    
+    //Add User API
+    @PostMapping("/add-user")
+    public ResponseEntity<?> addUser(
+            @RequestBody AddUserRequest request){
+
+        return ResponseEntity.ok(
+                service.addUser(request));
+    }
+
+}

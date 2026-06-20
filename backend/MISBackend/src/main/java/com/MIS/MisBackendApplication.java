@@ -1,0 +1,27 @@
+package com.MIS;
+
+import javax.sql.DataSource;
+
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+
+@SpringBootApplication
+public class MisBackendApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(MisBackendApplication.class, args);
+	}
+
+	@Bean
+	CommandLineRunner checkDb(DataSource dataSource) {
+	    return args -> {
+	        System.out.println("url is:"+
+	                dataSource.getConnection()
+	                          .getMetaData()
+	                          .getURL()
+	        );
+	    };
+	}
+}

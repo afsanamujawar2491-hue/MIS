@@ -1,0 +1,5 @@
+package com.MIS.service;
+
+public class EmailService {
+
+}
