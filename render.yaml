@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: mis-backend
+    env: java
+    rootDir: MISBackend
+    buildCommand: ./mvnw clean install
+    startCommand: java -jar target/*.jar

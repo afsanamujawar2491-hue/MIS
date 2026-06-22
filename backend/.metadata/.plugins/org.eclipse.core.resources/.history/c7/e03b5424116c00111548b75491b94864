@@ -1,8 +1,0 @@
-package com.MIS.dto;
-
-public class ForgotPasswordResponse {
-    private boolean success;
-    private String message;
-
-    // getters/setters
-}

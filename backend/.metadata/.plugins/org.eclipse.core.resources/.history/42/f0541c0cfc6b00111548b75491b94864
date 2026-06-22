@@ -1,5 +1,0 @@
-package com.MIS.security;
-
-public class JwtFilter {
-
-}

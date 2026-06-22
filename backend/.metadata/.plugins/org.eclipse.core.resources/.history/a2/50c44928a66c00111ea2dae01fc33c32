@@ -1,5 +1,0 @@
-package com.MIS.exception;
-
-public class GlobalExceptionHandler {
-
-}

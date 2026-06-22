@@ -31,3 +31,14 @@ build/
 
 ### VS Code ###
 .vscode/
+.env
+# Eclipse
+.metadata/
+*.launch
+*.log
+
+# Spring Boot secrets
+application.properties
+
+# Build files
+target/
